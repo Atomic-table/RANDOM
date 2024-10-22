@@ -1,0 +1,116 @@
+
+import wikipedia
+import sympy as sp
+import nltk
+from nltk.tokenize import word_tokenize
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.svm import SVC
+from sklearn.model_selection import train_test_split
+import datetime
+
+# Load dataset
+questions = ["What is AI?", "What is ML?", "What is Deep Learning?", "What is NLP?"]
+answers = ["Artificial Intelligence", "Machine Learning", "Deep Learning", "Natural Language Processing"]
+
+# Preprocess data
+vectorizer = TfidfVectorizer()
+X = vectorizer.fit_transform(questions)
+y = answers
+
+# Train model
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+svm = SVC(kernel='linear', C=1)
+svm.fit(X_train, y_train)
+
+def get_answer(question):
+    try:
+        # Math solver
+        if any(math_op in question for math_op in ['+', '-', '*', '/', '^', '%', '=', 'x', 'sin', 'cos', 'tan', 'log', 'exp']):
+            return solve_math_problem(question)
+        
+        # Wikipedia search
+        elif any(key in question.lower() for key in ["who", "what", "where", "when", "why", "how"]):
+            try:
+                page = wikipedia.page(question)
+                return page.summary
+            except wikipedia.exceptions.DisambiguationError:
+                return "Multiple answers found. Please clarify the question."
+            except wikipedia.exceptions.PageError:
+                return "Answer not found."
+            except Exception as e:
+                question_vec = vectorizer.transform([question])
+                prediction = svm.predict(question_vec)
+                return prediction[0]
+        
+        # Time
+        elif any(key in question.lower() for key in ["time", "current time", "what is the time"]):
+            return get_time()
+        
+        else:
+            return "I didn't understand your question."
+    
+    except Exception as e:
+        return str(e)
+
+def solve_math_problem(question):
+    x = sp.symbols('x')
+    
+    # Replace implicit multiplication with explicit multiplication
+    question = question.replace("x", "*x")
+    question = question.replace("^", "**")
+    
+    # Algebra
+    if '=' in question:
+        equation = sp.sympify(question)
+        solution = sp.solve(equation, x)
+        return str(solution)
+    
+    # Trigonometry
+    elif 'sin' in question or 'cos' in question or 'tan' in question:
+        equation = sp.sympify(question)
+        solution = sp.N(equation, 10)  # Evaluate to 10 decimal places
+        return str(solution)
+    
+    # Calculus
+    elif 'diff' in question or 'int' in question:
+        function = question.split('(')[1].split(')')[0]
+        equation = sp.sympify(function)
+        if 'diff' in question:
+            solution = sp.diff(equation, x)
+        elif 'int' in question:
+            solution = sp.integrate(equation, x)
+        return str(solution)
+    
+    # Basic math operations
+    else:
+        return str(sp.sympify(question).evalf())
+
+def get_time():
+    current_time = datetime.datetime.now()
+    return current_time.strftime("%Y-%m-%d %H:%M:%S")
+
+def main():
+    print("Ask me anything!")
+    while True:
+        question = input("You: ")
+        if question.lower() == "quit":
+            break
+        
+        if any(math_op in question for math_op in ['+', '-', '*', '/', '^', '%', '=', 'x', 'sin', 'cos', 'tan', 'log', 'exp']):
+            answer = solve_math_problem(question)
+        else:
+            answer = get_answer(question)
+        print("Ai", answer)
+
+        # Additional features
+        if question.lower() == "help":
+            print("Available commands:")
+            print(" quit - Exit the program")
+            print(" help - Display this message")
+        elif question.lower() == "about":
+            print("SAINTS (Soviet Artificial Intelligence System)")
+            print("Version 1.0")
+            print("Developed by [CO/USSR.Krishnashish Nandi]")
+
+if __name__ == "__main__":
+    main()
