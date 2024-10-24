@@ -108,9 +108,9 @@ def main():
             print(" quit - Exit the program")
             print(" help - Display this message")
         elif question.lower() == "about":
-            print("SAINTS (Soviet Artificial Intelligence System)")
+            print("RANDOM")
             print("Version 1.0")
-            print("Developed by [CO/USSR.Krishnashish Nandi]")
+            print("Developed by [Atomic table]")
 
 if __name__ == "__main__":
     main()
